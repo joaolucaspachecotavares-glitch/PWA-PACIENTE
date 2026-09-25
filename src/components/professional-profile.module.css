@@ -1,0 +1,373 @@
+.page {
+  display: grid;
+  gap: 24px;
+}
+.hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: white;
+}
+.heroAccent {
+  height: 60px;
+  background: var(--primary-100);
+  color: #8fbaa4;
+  overflow: hidden;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 24px;
+}
+.identity {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  padding: 0 22px 24px;
+  margin-top: -24px;
+}
+.identity > :global(.avatar) {
+  border: 5px solid white;
+  box-sizing: content-box;
+  border-radius: 21px;
+}
+.identityText {
+  width: 100%;
+  min-width: 0;
+}
+.identityText h1 {
+  font-size: clamp(28px, 3vw, 36px);
+  margin: 5px 0 8px;
+}
+.identityText :global(.eyebrow) {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+.registration {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 8px;
+}
+.favorite {
+  position: absolute;
+  top: 40px;
+  right: 22px;
+  font-size: 12px;
+  padding: 10px 12px;
+  min-height: 44px;
+}
+.favorite[aria-pressed="true"] {
+  color: var(--forest);
+  background: var(--primary-100);
+  border-color: var(--primary-300);
+}
+.highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 24px;
+  border-top: 1px solid var(--border);
+  padding: 18px 22px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.highlights > * {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.highlights svg,
+.highlights strong {
+  color: var(--forest);
+}
+.sectionNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.sectionNav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.sectionNav a:hover {
+  color: var(--forest);
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+.grid,
+.details,
+.aside {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+.aside {
+  align-content: start;
+}
+.panel {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px 20px;
+  min-width: 0;
+  scroll-margin-top: 24px;
+}
+.sectionHeading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 22px;
+}
+.sectionHeading svg {
+  color: var(--forest);
+}
+.panel h2 {
+  font-size: 20px;
+}
+.panel p {
+  line-height: 1.85;
+}
+.panel .bio {
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.85;
+  margin-bottom: 16px;
+}
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 28px 0;
+}
+.subheading {
+  margin-bottom: 12px;
+}
+.caption {
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.approachName {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--forest);
+  margin: 0 0 10px;
+  letter-spacing: 0;
+}
+.gentleNote {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  background: var(--primary-100);
+  border-radius: 12px;
+  color: var(--forest);
+  margin-top: 22px;
+}
+.gentleNote p {
+  color: var(--forest);
+  font-size: 13px;
+}
+.credentials {
+  display: grid;
+  gap: 24px;
+}
+.credentials > div {
+  display: flex;
+  gap: 12px;
+}
+.credentials h3 {
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  margin-bottom: 4px;
+}
+.credentials small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.smallIcon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  background: var(--primary-100);
+  color: var(--forest);
+  border-radius: 11px;
+}
+.panel .disclaimer {
+  font-size: 12px;
+  line-height: 1.7;
+  border-top: 1px solid var(--border);
+  margin-top: 22px;
+  padding-top: 16px;
+}
+.reviewSummary {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.reviewSummary > div > strong {
+  font-size: 13px;
+}
+.reviewSummary p {
+  font-size: 12px;
+  margin-top: 5px;
+}
+.score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--forest);
+  padding: 12px 18px;
+  background: var(--primary-100);
+  border-radius: 12px;
+}
+.reviewSummary .score strong {
+  font-size: 34px;
+  line-height: 1.4;
+}
+.booking {
+  border-top: 4px solid var(--primary-500);
+}
+.booking h2 {
+  margin-top: 10px;
+}
+.price {
+  display: flex;
+  gap: 3px 12px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  margin: 22px 0;
+}
+.price strong {
+  font-size: 34px;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+}
+.price span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.facts {
+  display: grid;
+  gap: 16px;
+  margin: 0 0 24px;
+}
+.facts > div {
+  display: grid;
+  gap: 3px;
+}
+.facts dt {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+.facts dt svg {
+  color: var(--forest);
+}
+.facts dd {
+  margin: 0 0 0 29px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.booking .bookingNote {
+  text-align: center;
+  font-size: 12px;
+  margin-top: 14px;
+}
+.availability {
+  scroll-margin-top: 28px;
+}
+.availability > :global(.badge) {
+  margin-bottom: 16px;
+}
+.availability p {
+  font-size: 13px;
+}
+.time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 14px;
+  border: 1px solid var(--primary-300);
+  border-radius: 10px;
+  background: var(--primary-100);
+  color: var(--forest);
+  margin: 16px 0;
+}
+.time span {
+  font-size: 11px;
+  margin-left: auto;
+}
+.asideNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 1.8;
+  padding: 0 12px;
+}
+.asideNote svg {
+  color: var(--forest);
+  margin-top: 3px;
+}
+@media (min-width: 640px) {
+  .identity {
+    gap: 22px;
+    padding: 0 28px 28px;
+  }
+  .identityText {
+    width: auto;
+    flex: 1;
+    padding-top: 42px;
+  }
+  .favorite {
+    top: 38px;
+    right: 28px;
+  }
+  .identity > :global(.avatar) {
+    width: 102px;
+    height: 112px;
+  }
+  .identity > :global(.avatar) svg {
+    width: 108px;
+    height: 108px;
+  }
+  .highlights {
+    padding-inline: 28px;
+  }
+  .panel {
+    padding: 28px;
+  }
+}
+@media (min-width: 1280px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+    gap: 28px;
+  }
+  .aside {
+    position: sticky;
+    top: 24px;
+  }
+  .aside .panel {
+    padding: 24px;
+  }
+  .identityText {
+    padding: 36px 132px 0 0;
+  }
+}
