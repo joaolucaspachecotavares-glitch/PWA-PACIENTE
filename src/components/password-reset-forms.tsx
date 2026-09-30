@@ -13,13 +13,21 @@ export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!email.trim()) return;
+    // Lê do <form> (via FormData), não só do estado: um valor digitado antes da
+    // hidratação do React ainda existe no DOM e precisa contar no envio.
+    const value = String(new FormData(e.currentTarget).get("email") ?? "").trim();
+    if (!value) {
+      setError("Informe seu e-mail.");
+      return;
+    }
+    setError(null);
     setPending(true);
     try {
-      await api("/auth/password/forgot", { method: "POST", body: { email: email.trim(), app: "PATIENT_APP" } });
+      await api("/auth/password/forgot", { method: "POST", body: { email: value, app: "PATIENT_APP" } });
     } catch {
       // A API sempre responde 202 com mensagem neutra; erros de rede não devem revelar nada.
     } finally {
@@ -42,7 +50,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form noValidate onSubmit={(e) => void submit(e)} className="registration-form">
+    <form noValidate method="post" onSubmit={(e) => void submit(e)} className="registration-form">
       <Field id="email" label="E-mail">
         <TextInput
           id="email"
@@ -53,6 +61,11 @@ export function ForgotPasswordForm() {
           onChange={(e) => setEmail(e.target.value)}
         />
       </Field>
+      {error && (
+        <Alert tone="error" role="alert">
+          {error}
+        </Alert>
+      )}
       <Button type="submit" className="full-width" loading={pending}>
         Enviar link {!pending && <ArrowRight size={18} />}
       </Button>
@@ -83,7 +96,12 @@ export function ResetPasswordForm() {
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const validation = validate(password, confirm);
+    // Lê do <form> (via FormData), não só do estado: um valor digitado antes da
+    // hidratação do React ainda existe no DOM e precisa contar no envio.
+    const data = new FormData(e.currentTarget);
+    const newPassword = String(data.get("password") ?? "");
+    const newConfirm = String(data.get("confirm") ?? "");
+    const validation = validate(newPassword, newConfirm);
     if (validation) {
       setError(validation);
       return;
@@ -92,7 +110,7 @@ export function ResetPasswordForm() {
     setError(null);
     setInvalidToken(false);
     try {
-      await api("/auth/password/reset", { method: "POST", body: { token, password } });
+      await api("/auth/password/reset", { method: "POST", body: { token, password: newPassword } });
       // Nova senha: descarta todo o cache antes de mandar para o login.
       client.clear();
       router.replace("/entrar?senha=redefinida");
@@ -109,7 +127,7 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <form noValidate onSubmit={(e) => void submit(e)} className="registration-form">
+    <form noValidate method="post" onSubmit={(e) => void submit(e)} className="registration-form">
       <Field id="password" label="Nova senha">
         <div className="password-field">
           <TextInput

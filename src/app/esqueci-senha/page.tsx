@@ -4,7 +4,7 @@ import { KeyRound } from "lucide-react";
 import { FlowShell } from "@/components/flow-shell";
 import { ForgotPasswordForm } from "@/components/password-reset-forms";
 
-export const metadata: Metadata = { title: "Esqueci minha senha", robots: { index: false } };
+export const metadata: Metadata = { title: "Esqueci minha senha" };
 
 export default function ForgotPasswordPage() {
   return (

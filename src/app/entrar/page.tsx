@@ -80,9 +80,12 @@ function LoginForm() {
           </button>
         </div>
       </Field>
-      <Link href="/esqueci-senha" className="header-link">
+      {/* <a> em vez de <Link>: navegação client-side deixaria o /entrar (que também tem
+          um campo "E-mail") montado durante a transição, correndo o risco de preencher
+          o campo errado. Navegação completa evita a ambiguidade. */}
+      <a href="/esqueci-senha" className="header-link">
         Esqueci minha senha
-      </Link>
+      </a>
       {error && (
         <Alert tone="error" role="alert">
           {error}

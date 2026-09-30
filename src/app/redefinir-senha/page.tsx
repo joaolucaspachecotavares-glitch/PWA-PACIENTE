@@ -4,7 +4,7 @@ import { KeyRound } from "lucide-react";
 import { FlowShell } from "@/components/flow-shell";
 import { ResetPasswordForm } from "@/components/password-reset-forms";
 
-export const metadata: Metadata = { title: "Redefinir senha", robots: { index: false } };
+export const metadata: Metadata = { title: "Redefinir senha" };
 
 export default function ResetPasswordPage() {
   return (

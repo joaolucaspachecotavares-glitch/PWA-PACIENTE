@@ -228,7 +228,6 @@ test.describe("jornada do paciente", () => {
     ).toBe(201);
     await page.goto("/entrar");
     await page.getByRole("link", { name: "Esqueci minha senha" }).click();
-    await page.waitForLoadState("networkidle");
     await page.getByLabel("E-mail").fill(email);
     await page.getByRole("button", { name: "Enviar link" }).click();
     await expect(page.getByText("Se houver uma conta com este e-mail")).toBeVisible();
