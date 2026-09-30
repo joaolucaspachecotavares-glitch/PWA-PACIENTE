@@ -65,3 +65,14 @@ describe("arquivo de calendário", () => {
     assert.ok(!/ansiedade|resumo/i.test(ics));
   });
 });
+
+describe("renovação da sessão num 401", () => {
+  it("renova em /auth/me e nas rotas do app, mas não no login, cadastro ou refresh", async () => {
+    const { shouldRefreshOn401 } = await import("../src/lib/session.ts");
+    assert.equal(shouldRefreshOn401("/auth/me"), true);
+    assert.equal(shouldRefreshOn401("/appointments"), true);
+    assert.equal(shouldRefreshOn401("/auth/login"), false);
+    assert.equal(shouldRefreshOn401("/auth/refresh"), false);
+    assert.equal(shouldRefreshOn401("/auth/patient/register"), false);
+  });
+});
