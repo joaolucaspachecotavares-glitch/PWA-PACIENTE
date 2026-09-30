@@ -14,7 +14,7 @@ const PATIENT_AREA = [
   "/notificacoes",
   "/ajuda",
 ];
-const GUEST_ONLY = ["/entrar", "/cadastro"];
+const GUEST_ONLY = ["/entrar", "/cadastro", "/esqueci-senha", "/redefinir-senha"];
 
 const matches = (path: string, prefixes: string[]) =>
   prefixes.some((p) => path === p || path.startsWith(`${p}/`));

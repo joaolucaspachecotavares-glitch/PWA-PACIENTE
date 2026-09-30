@@ -214,6 +214,39 @@ test.describe("jornada do paciente", () => {
     await page.getByRole("button", { name: "Entrar" }).click();
     await expect(page.getByText("E-mail ou senha incorretos.")).toBeVisible();
   });
+
+  test("esqueci minha senha → link por e-mail → nova senha", async ({ page, playwright }) => {
+    const email = uniqueEmail();
+    const api = await playwright.request.newContext({ baseURL: API_ORIGIN });
+    expect(
+      (
+        await api.post("/api/auth/patient/register", {
+          headers: { Origin: API_ORIGIN },
+          data: { name: "Paciente Senha", birthDate: adultBirthDate(), email, phone: "48999990000", password: PASSWORD, acceptTerms: true },
+        })
+      ).status(),
+    ).toBe(201);
+    await page.goto("/entrar");
+    await page.getByRole("link", { name: "Esqueci minha senha" }).click();
+    await page.waitForLoadState("networkidle");
+    await page.getByLabel("E-mail").fill(email);
+    await page.getByRole("button", { name: "Enviar link" }).click();
+    await expect(page.getByText("Se houver uma conta com este e-mail")).toBeVisible();
+    const outbox = await api.get(`/api/dev/outbox/latest?to=${encodeURIComponent(email)}`);
+    const { text } = (await outbox.json()) as { text: string };
+    const link = /http:\/\/127\.0\.0\.1:3000(\/redefinir-senha\?token=[^\s]+)/.exec(text)![1];
+    await page.goto(link);
+    await page.getByLabel("Nova senha", { exact: true }).fill("outra-senha-123");
+    await page.getByLabel("Confirmar nova senha").fill("outra-senha-123");
+    await page.getByRole("button", { name: "Salvar nova senha" }).click();
+    await expect(page).toHaveURL(/\/entrar\?senha=redefinida/);
+    await expect(page.getByText("Senha alterada. Entre com a nova senha.")).toBeVisible();
+    await page.getByLabel("E-mail").fill(email);
+    await page.getByLabel("Senha", { exact: true }).fill("outra-senha-123");
+    await page.getByRole("button", { name: "Entrar" }).click();
+    await expect(page).toHaveURL(/\/inicio$/);
+    await api.dispose();
+  });
 });
 
 test.describe("responsividade e acessibilidade", () => {

@@ -21,6 +21,7 @@ function LoginForm() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const resetSuccess = params.get("senha") === "redefinida";
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,6 +46,11 @@ function LoginForm() {
 
   return (
     <form noValidate onSubmit={(e) => void submit(e)} className="registration-form">
+      {resetSuccess && (
+        <Alert tone="success" role="status">
+          Senha alterada. Entre com a nova senha.
+        </Alert>
+      )}
       <Field id="email" label="E-mail">
         <TextInput
           id="email"
@@ -74,6 +80,9 @@ function LoginForm() {
           </button>
         </div>
       </Field>
+      <Link href="/esqueci-senha" className="header-link">
+        Esqueci minha senha
+      </Link>
       {error && (
         <Alert tone="error" role="alert">
           {error}
