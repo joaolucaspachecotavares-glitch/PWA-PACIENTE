@@ -78,6 +78,13 @@
   gap: 7px;
   flex-wrap: wrap;
 }
+.highlights :global(.rating) {
+  margin-top: 0;
+  font-size: 12px;
+}
+.highlights :global(.rating span) {
+  font-size: 12px;
+}
 .highlights svg,
 .highlights strong {
   color: var(--forest);
@@ -312,6 +319,186 @@
 .time span {
   font-size: 11px;
   margin-left: auto;
+}
+.video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--ink);
+}
+.video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.videoFacade {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 120px;
+  padding: 22px;
+  border: 1px solid var(--primary-300);
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary-100), white);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.videoFacade:hover {
+  border-color: var(--primary-500);
+}
+.videoFacade:focus-visible {
+  outline: 3px solid var(--primary-500);
+  outline-offset: 3px;
+}
+.videoFacade strong {
+  display: block;
+  font-size: 16px;
+}
+.videoFacade small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.playIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 60px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--primary-500);
+  color: white;
+}
+.playIcon svg {
+  margin-left: 3px;
+}
+.categoryList {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0 0;
+}
+.categoryList > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.categoryList dt {
+  color: var(--muted);
+}
+.categoryList dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--forest);
+}
+.reviewList {
+  display: grid;
+  gap: 14px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.reviewList li {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface-soft, #f2f6f4);
+}
+.reviewList p {
+  margin: 8px 0 6px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.reviewList small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.slotList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.slotList a {
+  display: grid;
+  gap: 2px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--primary-300);
+  border-radius: 10px;
+  background: var(--primary-100);
+  color: var(--forest);
+  text-decoration: none;
+}
+.slotList a:hover {
+  border-color: var(--primary-500);
+}
+.slotList span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.slotList strong {
+  font-size: 15px;
+}
+/* Até o layout de duas colunas, o agendamento fica sempre à mão, acima da navegação inferior. */
+.mobileCta {
+  position: fixed;
+  z-index: 25;
+  left: 0;
+  right: 0;
+  bottom: calc(65px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #fffffff7;
+  backdrop-filter: blur(15px);
+  border-top: 1px solid var(--border);
+}
+.mobileCta > div {
+  display: grid;
+  line-height: 1.3;
+}
+.mobileCta strong {
+  font-size: 18px;
+}
+.mobileCta span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.withCta {
+  padding-bottom: 72px;
+}
+/* A barra de agendamento soma-se à navegação inferior: reserva as duas ao rolar/focar. */
+@media (max-width: 1099px) {
+  :global(html):has(.mobileCta) {
+    scroll-padding-bottom: calc(160px + env(safe-area-inset-bottom));
+  }
+}
+@media (min-width: 1100px) {
+  .mobileCta {
+    bottom: 0;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+}
+@media (min-width: 1280px) {
+  .mobileCta {
+    display: none;
+  }
+  .withCta {
+    padding-bottom: 0;
+  }
 }
 .asideNote {
   display: flex;

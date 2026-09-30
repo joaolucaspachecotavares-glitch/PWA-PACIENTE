@@ -8,3 +8,6 @@ test-results/
 playwright-report/
 *.log
 .npm-cache/
+
+# Configurações locais do Claude Code (específicas da máquina)
+.claude/

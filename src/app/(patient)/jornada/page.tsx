@@ -1,13 +1,20 @@
-import {
-  Sprout,
-  Heart,
-  Footprints,
-  Sparkles,
-  Check,
-  CalendarCheck,
-} from "lucide-react";
-import { ButtonLink, SectionTitle, Badge } from "@/components/ui";
+"use client";
+import { CalendarCheck, Check, Footprints, Heart, Sparkles, Sprout } from "lucide-react";
+import { ErrorBlock, LoadingBlock } from "@/components/query-state";
+import { ButtonLink, SectionTitle } from "@/components/ui";
+import { formatMonth } from "@/lib/format";
+import { useJourneyData } from "@/lib/queries";
+
+const ICONS: Record<string, typeof Footprints> = {
+  FIRST_STEP: Footprints,
+  CONSISTENCY: Heart,
+  CARING_FOR_ME: Sparkles,
+  MY_JOURNEY: Sprout,
+};
+
 export default function JourneyPage() {
+  const journey = useJourneyData();
+
   return (
     <>
       <div className="page-title-row">
@@ -16,7 +23,6 @@ export default function JourneyPage() {
           <h1>Minha jornada</h1>
           <p>Um olhar gentil para o caminho que você está construindo.</p>
         </div>
-        <Badge neutral>Histórico ilustrativo</Badge>
       </div>
       <div className="journey-hero">
         <span className="round-icon">
@@ -28,77 +34,81 @@ export default function JourneyPage() {
             <br />
             <span>Você não precisa percorrê-lo sozinho.</span>
           </h2>
-          <p>Seu ritmo é único. Celebre cada encontro com você.</p>
+          <p>Seu ritmo é único. Aqui não há comparação, ranking ou pressa.</p>
         </div>
       </div>
-      <div className="metric-grid">
-        <article>
-          <CalendarCheck size={24} />
-          <strong>04</strong>
-          <span>consultas realizadas</span>
-        </article>
-        <article>
-          <Heart size={24} />
-          <strong>03</strong>
-          <span>encontros consecutivos</span>
-        </article>
-        <article>
-          <Sprout size={24} />
-          <strong>01</strong>
-          <span>jornada que é só sua</span>
-        </article>
-      </div>
-      <SectionTitle title="Marcos do seu cuidado" />
-      <div className="milestone-grid">
-        {[
-          {
-            icon: Footprints,
-            title: "Primeiro passo",
-            text: "Você abriu espaço para o seu cuidado.",
-            done: true,
-          },
-          {
-            icon: Heart,
-            title: "Criando conexões",
-            text: "Uma relação de confiança se constrói aos poucos.",
-            done: true,
-          },
-          {
-            icon: Sparkles,
-            title: "Cuidando de mim",
-            text: "Mais encontros com você, no seu tempo.",
-            done: false,
-          },
-        ].map(({ icon: Icon, title, text, done }) => (
-          <article
-            key={title}
-            className={`milestone ${done ? "milestone-done" : ""}`}
-          >
-            <span className="round-icon">
-              <Icon size={28} />
-            </span>
-            <h3>{title}</h3>
-            <p>{text}</p>
-            <span className="milestone-status">
-              {done ? (
-                <>
-                  <Check size={15} /> Na sua história
-                </>
-              ) : (
-                "Um caminho a explorar"
-              )}
-            </span>
-          </article>
-        ))}
-      </div>
+      {journey.isPending ? (
+        <LoadingBlock lines={4} />
+      ) : journey.isError ? (
+        <ErrorBlock error={journey.error} onRetry={() => void journey.refetch()} />
+      ) : (
+        <>
+          <div className="metric-grid">
+            <article>
+              <CalendarCheck size={24} />
+              <strong>{String(journey.data.attended).padStart(2, "0")}</strong>
+              <span>consultas realizadas</span>
+            </article>
+            <article>
+              <Heart size={24} />
+              <strong>{String(journey.data.consecutive).padStart(2, "0")}</strong>
+              <span>consultas consecutivas</span>
+            </article>
+            <article>
+              <CalendarCheck size={24} />
+              <strong>{String(journey.data.upcoming).padStart(2, "0")}</strong>
+              <span>consultas agendadas</span>
+            </article>
+          </div>
+          <SectionTitle title="Conquistas" />
+          <div className="milestone-grid">
+            {journey.data.achievements.map((a) => {
+              const Icon = ICONS[a.code] ?? Sparkles;
+              return (
+                <article key={a.code} className={`milestone ${a.achieved ? "milestone-done" : ""}`}>
+                  <span className="round-icon">
+                    <Icon size={28} />
+                  </span>
+                  <h3>{a.title}</h3>
+                  <p>{a.description}</p>
+                  <span className="milestone-status">
+                    {a.achieved ? (
+                      <>
+                        <Check size={15} /> Na sua história
+                      </>
+                    ) : (
+                      `${a.progress} de ${a.target}`
+                    )}
+                  </span>
+                </article>
+              );
+            })}
+          </div>
+          {journey.data.byMonth.length > 0 && (
+            <>
+              <SectionTitle title="Histórico" />
+              <ul className="month-history">
+                {journey.data.byMonth.map((m) => (
+                  <li key={m.month}>
+                    <span>{formatMonth(m.month)}</span>
+                    <strong>
+                      {m.attended} {m.attended === 1 ? "consulta" : "consultas"}
+                    </strong>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </>
+      )}
       <div className="journey-end">
         <p>
           Não há comparação. Não há pressa.
           <br />
           <strong>Há o seu tempo e a sua história.</strong>
         </p>
-        <ButtonLink href="/dashboard" variant="secondary">
-          Voltar para meu início
+        <ButtonLink href="/inicio" variant="secondary">
+          Voltar para o início
         </ButtonLink>
       </div>
     </>

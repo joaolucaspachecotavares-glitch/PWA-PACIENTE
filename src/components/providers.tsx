@@ -1,46 +1,51 @@
 "use client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, useContext, useState, type ReactNode } from "react";
-import type { Answers } from "@/lib/types";
+import { ApiError } from "@/lib/api";
+import type { Answers } from "@/lib/api-types";
 
 type JourneyState = {
+  /** Respostas do questionário antes do cadastro: somente em memória, nunca em storage. */
   answers: Answers;
   setAnswer: (id: string, values: string[]) => void;
-  favorites: string[];
-  toggleFavorite: (id: string) => void;
-  name: string;
-  setName: (name: string) => void;
-  reset: () => void;
+  clearAnswers: () => void;
 };
+
 const JourneyContext = createContext<JourneyState | null>(null);
-export function JourneyProvider({ children }: { children: ReactNode }) {
+
+function makeQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 30_000,
+        refetchOnWindowFocus: true,
+        retry: (count, error) =>
+          !(error instanceof ApiError && error.status >= 400 && error.status < 500) && count < 2,
+      },
+    },
+  });
+}
+
+export function Providers({ children }: { children: ReactNode }) {
+  const [client] = useState(makeQueryClient);
   const [answers, setAnswers] = useState<Answers>({});
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [name, setName] = useState("");
   return (
-    <JourneyContext.Provider
-      value={{
-        answers,
-        setAnswer: (id, values) => setAnswers((p) => ({ ...p, [id]: values })),
-        favorites,
-        toggleFavorite: (id) =>
-          setFavorites((p) =>
-            p.includes(id) ? p.filter((v) => v !== id) : [...p, id],
-          ),
-        name,
-        setName,
-        reset: () => {
-          setAnswers({});
-          setFavorites([]);
-          setName("");
-        },
-      }}
-    >
-      {children}
-    </JourneyContext.Provider>
+    <QueryClientProvider client={client}>
+      <JourneyContext.Provider
+        value={{
+          answers,
+          setAnswer: (id, values) => setAnswers((p) => ({ ...p, [id]: values })),
+          clearAnswers: () => setAnswers({}),
+        }}
+      >
+        {children}
+      </JourneyContext.Provider>
+    </QueryClientProvider>
   );
 }
+
 export function useJourney() {
   const context = useContext(JourneyContext);
-  if (!context) throw new Error("JourneyProvider é obrigatório.");
+  if (!context) throw new Error("Providers é obrigatório.");
   return context;
 }

@@ -1,37 +1,32 @@
-# Evolução da base
+# Evolução da PWA Paciente
 
-## Referências de produto
+## Estado atual (2026-09-29)
 
-Baseada no Design System v0.1, Catálogo de Componentes v0.1 e fluxo textual P01–P34 da conversa “Motoristas Uber em Florianópolis”. As imagens de wireframes não estavam presentes nos anexos recuperados; a hierarquia foi implementada a partir das descrições tela a tela.
+O app deixou de ser um protótipo com dados fixos. Agora ele consome a API central (LUVIMIND-API), com cadastro real, sessão segura, catálogo, agenda, pagamento (sandbox), cancelamento, avaliações, jornada, notificações e direitos LGPD (exportar e excluir dados).
 
-Decisões preservadas: verde suave e branco, Inter, fluxo sem cadastro antes da prévia, dez perguntas, compatibilidade qualitativa (sem percentuais psicológicos), cinco recomendações principais, idade mínima de 18 anos e cinco itens de navegação.
+Removido da versão de demonstração: `src/lib/{domain,professionals,professional-details,questions,types}.ts`, `POST /api/demo/cadastro`, as rotas `/dashboard` e `/meu-perfil` e os testes de navegador antigos.
 
-## Fronteiras de implementação
+## Decisões
 
-- `src/lib/types.ts` define os modelos usados pelos componentes. Substituir as fixtures por um repositório/API mantendo os componentes de apresentação.
-- `src/lib/domain.ts` centraliza seleção, maioridade, validação e ordenação ilustrativa. A função de maioridade é reaplicada pelo servidor, independentemente do checkbox.
-- `JourneyProvider` mantém apenas o estado efêmero da prévia. Migrar para um serviço de sessão e uma persistência autenticada após definir o modelo de consentimento. Não mover senha ou respostas para localStorage.
-- `POST /api/demo/cadastro` é deliberadamente uma simulação sem autenticação. Não usar esse endpoint como cadastro de produção.
-- O `PatientShell` não é uma barreira de autenticação. Rotas são públicas para revisão do protótipo. Adicionar autorização no servidor antes de conectar dados reais.
-- O service worker tem escopo mínimo: fallback offline público. Qualquer política futura de cache precisa considerar dados privados e logout.
+- **Regras no servidor.** 18+ (no fuso de Brasília), limite de horários, reserva de 15 min, janela de 4h para reembolso, comissão e validação do link do Meet ficam na API. O front repete algumas validações só para dar feedback imediato.
+- **Mesmo domínio.** O Next reescreve `/api/*` para a API. Os cookies ficam primários no domínio do app, sem CORS no navegador.
+- **Supabase = PostgreSQL da API.** Sem `supabase-js` no front: a chave publishable daria acesso direto ao banco e contornaria RBAC, criptografia e auditoria. O RLS fica ativo em todas as tabelas como defesa extra.
+- **Google Meet externo.** A Luvimind não hospeda nem grava consultas. O link é validado pela API e só aparece 15 min antes do início.
+- **Troca de identidade limpa o cache.** Ao entrar ou se cadastrar, o cache do React Query é descartado, e o shell só encerra a sessão com uma resposta atual de `/auth/me`. Isso corrige um bug em que a visita anônima derrubava a sessão recém-criada; há teste de regressão.
 
-## Próxima implementação sugerida
+## Pendências antes do lançamento
 
-1. Validar texto das perguntas, identidade visual e comportamento do matching com produto e profissionais responsáveis.
-2. Criar autenticação, verificação de e-mail, sessão segura, termos definitivos e regra 18+ em uma API persistente. Definir fuso de negócio para a data de corte (a prévia usa a data local do servidor).
-3. Conectar catálogo real, registro profissional validado e disponibilidade; substituir avaliações/avatares fictícios.
-4. Implementar perfil completo, calendário, horário, contexto pré-consulta e consentimento de compartilhamento.
-5. Conectar pagamento, confirmação por webhook e política de cancelamento. Não confirmar consulta apenas com um clique local.
-6. Conectar dashboard e jornada aos eventos reais, sem competição ou promessa de resultado clínico.
+1. **Recuperação de senha e verificação de e-mail.** Dependem de um provedor de e-mail transacional.
+2. **Notificações push (Web Push).** Hoje os lembretes de 24h, 2h e 15 min ficam na central de notificações do app.
+3. **Gateway de pagamento real** (Asaas, iugu ou Pagar.me) via `PaymentProvider` na API. O sandbox é bloqueado em produção.
+4. **Textos jurídicos integrais** de Termos e Privacidade (versão `2026-09` é um resumo), revisados por jurídico/DPO.
+5. **Validação do questionário e do matching** com a equipe clínica.
+6. **App profissional:** cadastro do link do Google Meet, agenda, vídeo e aprovação pelo Admin. Até lá, os profissionais vêm do seed de desenvolvimento.
+7. **Supabase:** dois projetos separados. **Produção** (`lqaueuqlkvffdtxociht`): migrado, reforçado e auditado, sem dados. **Teste** (Neon `luvimind-teste`, gratuito — o plano free do Supabase não permite um segundo projeto): recebe os dados fictícios e as contas dos testes automáticos. Cada ambiente tem arquivo e segredos próprios; veja "Ambientes" no README da API.
 
 ## Convenções
 
-- Componentes interativos recebem `use client`; layouts e rotas sem estado permanecem no servidor.
-- Cor, raio e espaçamento são definidos em tokens; evite valores de marca duplicados.
-- Mantenha rótulos, estados vazios e erros em português. Não indique que uma ação real foi concluída quando a integração ainda não existe.
-- Não registre dados pessoais, respostas ou senhas em logs.
-- Sem serviços de terceiros, rastreadores ou fontes remotas nesta entrega.
-
-## Revisão antes de produção
-
-Este repositório entrega a experiência visual inicial. Cadastro real, segurança de sessão, persistência, consentimentos definitivos, matching validado, notificações, pagamentos, agenda e atendimento ainda dependem das próximas etapas de produto e desenvolvimento.
+- Componentes interativos com `"use client"`; layouts sem estado ficam no servidor.
+- Cores, raios e espaçamentos só via tokens (`src/styles/tokens.css`).
+- Textos, estados vazios e erros em português, sem prometer resultado clínico.
+- Nunca registrar dados pessoais, respostas ou senhas em logs nem no armazenamento do navegador.

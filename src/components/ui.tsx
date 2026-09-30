@@ -4,18 +4,26 @@ import {
   useEffect,
   useId,
   useRef,
-  type ReactNode,
   type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type ReactNode,
 } from "react";
-import { ArrowLeft, ArrowRight, X, Sprout } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CircleAlert,
+  CircleCheck,
+  Info,
+  LoaderCircle,
+  Sprout,
+  Star,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 
 export function Brand({ small = false }: { small?: boolean }) {
   return (
-    <Link
-      href="/"
-      className={`brand ${small ? "brand-small" : ""}`}
-      aria-label="Luvimind, página inicial"
-    >
+    <Link href="/" className={`brand ${small ? "brand-small" : ""}`} aria-label="Luvimind, página inicial">
       <span className="brand-symbol" aria-hidden="true">
         <Sprout size={27} strokeWidth={1.7} />
       </span>
@@ -26,20 +34,30 @@ export function Brand({ small = false }: { small?: boolean }) {
     </Link>
   );
 }
+
+type Variant = "primary" | "secondary" | "ghost" | "danger";
+
 export function Button({
   children,
   variant = "primary",
   className = "",
+  loading = false,
+  disabled,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost";
-}) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; loading?: boolean }) {
   return (
-    <button className={`button button-${variant} ${className}`} {...props}>
+    <button
+      className={`button button-${variant} ${className}`}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      {...props}
+    >
+      {loading && <LoaderCircle className="spin" size={18} aria-hidden="true" />}
       {children}
     </button>
   );
 }
+
 export function ButtonLink({
   href,
   children,
@@ -49,7 +67,7 @@ export function ButtonLink({
 }: {
   href: string;
   children: ReactNode;
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: Variant;
   className?: string;
   arrow?: boolean;
 }) {
@@ -60,13 +78,8 @@ export function ButtonLink({
     </Link>
   );
 }
-export function BackLink({
-  href,
-  label = "Voltar",
-}: {
-  href: string;
-  label?: string;
-}) {
+
+export function BackLink({ href, label = "Voltar" }: { href: string; label?: string }) {
   return (
     <Link href={href} className="back-link">
       <ArrowLeft size={18} />
@@ -74,19 +87,17 @@ export function BackLink({
     </Link>
   );
 }
+
 export function Badge({
   children,
-  neutral = false,
+  tone = "success",
 }: {
   children: ReactNode;
-  neutral?: boolean;
+  tone?: "success" | "warning" | "error" | "neutral" | "info";
 }) {
-  return (
-    <span className={`badge ${neutral ? "badge-neutral" : ""}`}>
-      {children}
-    </span>
-  );
+  return <span className={`badge badge-${tone}`}>{children}</span>;
 }
+
 export function Dialog({
   open,
   onClose,
@@ -120,12 +131,7 @@ export function Dialog({
       <div className="dialog-inner">
         <div className="dialog-heading">
           <h2 id={id}>{title}</h2>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Fechar"
-            onClick={onClose}
-          >
+          <button type="button" className="icon-button" aria-label="Fechar" onClick={onClose}>
             <X size={20} />
           </button>
         </div>
@@ -134,6 +140,7 @@ export function Dialog({
     </dialog>
   );
 }
+
 export function SectionTitle({
   eyebrow,
   title,
@@ -153,22 +160,23 @@ export function SectionTitle({
     </div>
   );
 }
+
 export function EmptyState({
   title,
   description,
   href,
   action,
+  icon,
 }: {
   title: string;
   description: string;
   href?: string;
   action?: string;
+  icon?: ReactNode;
 }) {
   return (
     <div className="empty-state">
-      <span className="round-icon">
-        <Sprout size={28} />
-      </span>
+      <span className="round-icon">{icon ?? <Sprout size={28} />}</span>
       <h2>{title}</h2>
       <p>{description}</p>
       {href && action && (
@@ -177,5 +185,87 @@ export function EmptyState({
         </ButtonLink>
       )}
     </div>
+  );
+}
+
+const ALERT_ICONS = {
+  info: Info,
+  success: CircleCheck,
+  warning: TriangleAlert,
+  error: CircleAlert,
+};
+
+export function Alert({
+  tone = "info",
+  title,
+  children,
+  role,
+}: {
+  tone?: keyof typeof ALERT_ICONS;
+  title?: string;
+  children?: ReactNode;
+  role?: "alert" | "status";
+}) {
+  const Icon = ALERT_ICONS[tone];
+  return (
+    <div className={`alert alert-${tone}`} role={role}>
+      <Icon size={20} aria-hidden="true" />
+      <div>
+        {title && <strong>{title}</strong>}
+        {children && <div className="alert-body">{children}</div>}
+      </div>
+    </div>
+  );
+}
+
+export function Field({
+  label,
+  error,
+  hint,
+  id,
+  children,
+}: {
+  label: string;
+  error?: string;
+  hint?: string;
+  id: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      {children}
+      {hint && !error && (
+        <span id={`${id}-hint`} className="field-hint">
+          {hint}
+        </span>
+      )}
+      {error && (
+        <span id={`${id}-error`} className="field-error">
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Input com ligação acessível de erro/ajuda para uso dentro de <Field>. */
+export function TextInput({
+  id,
+  error,
+  hint,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & { id: string; error?: string; hint?: string }) {
+  const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
+  return <input id={id} name={id} aria-invalid={!!error} aria-describedby={describedBy} {...props} />;
+}
+
+export function Stars({ value, size = 14 }: { value: number; size?: number }) {
+  return (
+    <span className="stars" aria-hidden="true">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star key={n} size={size} fill={n <= Math.round(value) ? "currentColor" : "none"} />
+      ))}
+    </span>
   );
 }

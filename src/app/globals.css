@@ -1065,7 +1065,7 @@ select:focus-visible {
 }
 .rating span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 .professional-approach {
   font-size: 10px;
