@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -125,9 +126,21 @@ test.describe("jornada do paciente", () => {
     await page.getByRole("button", { name: "Confirmar cancelamento" }).click();
     await expect(page.getByRole("button", { name: "Cancelar consulta" })).toHaveCount(0);
 
-    // Notificações e jornada carregam
+    // Notificações têm volta para o Perfil
     await page.goto("/notificacoes");
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Notificações" })).toBeVisible();
+    await page.getByRole("link", { name: "Meu perfil", exact: true }).click();
+    await expect(page).toHaveURL(/\/perfil$/);
+
+    // Privacidade: "Baixar" entrega um PDF com os dados
+    await page.goto("/perfil/privacidade");
+    const downloading = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Baixar", exact: true }).click();
+    const download = await downloading;
+    expect(download.suggestedFilename()).toBe("meus-dados-luvimind.pdf");
+    const file = await readFile(await download.path());
+    expect(file.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+
     await page.goto("/jornada");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 

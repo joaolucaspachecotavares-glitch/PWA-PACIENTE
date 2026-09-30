@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bell, CheckCheck } from "lucide-react";
 import { ErrorBlock, LoadingBlock } from "@/components/query-state";
-import { Button, EmptyState } from "@/components/ui";
+import { BackLink, Button, EmptyState } from "@/components/ui";
 import { api } from "@/lib/api";
 import { formatRelativeDays, formatTime } from "@/lib/format";
 import { keys, useNotifications } from "@/lib/queries";
@@ -15,6 +15,7 @@ export default function NotificationsPage() {
 
   return (
     <>
+      <BackLink href="/perfil" label="Meu perfil" />
       <div className="page-title-row">
         <div>
           <p className="eyebrow">AVISOS</p>

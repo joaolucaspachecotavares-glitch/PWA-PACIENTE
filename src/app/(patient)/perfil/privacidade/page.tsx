@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Download, ShieldCheck, Trash2 } from "lucide-react";
 import { ErrorBlock, LoadingBlock } from "@/components/query-state";
 import { Alert, BackLink, Button, Dialog, SectionTitle } from "@/components/ui";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, downloadFile } from "@/lib/api";
 import { formatShortDate } from "@/lib/format";
 import { useSharedData } from "@/lib/queries";
 
@@ -27,15 +27,9 @@ export default function PrivacyPage() {
     setExporting(true);
     setExportError(null);
     try {
-      const data = await api<unknown>("/patients/me/export");
-      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "meus-dados-luvimind.json";
-      link.click();
-      URL.revokeObjectURL(url);
+      await downloadFile("/patients/me/export/pdf", "meus-dados-luvimind.pdf", "application/pdf");
     } catch (err) {
-      setExportError(err instanceof ApiError ? err.message : "Não foi possível gerar o arquivo.");
+      setExportError(err instanceof ApiError ? err.message : "Não foi possível gerar o PDF.");
     } finally {
       setExporting(false);
     }
@@ -98,8 +92,8 @@ export default function PrivacyPage() {
           <div>
             <Download size={21} />
             <div>
-              <strong>Baixar meus dados</strong>
-              <span>Arquivo com seu cadastro, preferências, consultas e avaliações.</span>
+              <strong>Baixar meus dados em PDF</strong>
+              <span>PDF com seu cadastro, preferências, consultas e avaliações.</span>
             </div>
             <Button variant="secondary" loading={exporting} onClick={() => void download()}>
               Baixar

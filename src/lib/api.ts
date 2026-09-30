@@ -51,13 +51,14 @@ async function parseError(res: Response): Promise<ApiError> {
   return new ApiError(res.status, message, errors);
 }
 
-export async function api<T>(path: string, options: Options = {}): Promise<T> {
+/** Faz a requisição renovando a sessão uma vez se o acesso expirou; lança ApiError se falhar. */
+async function request(path: string, options: Options, accept: string): Promise<Response> {
   const { body, headers, ...rest } = options;
   const init: RequestInit = {
     ...rest,
     credentials: "same-origin",
     headers: {
-      Accept: "application/json",
+      Accept: accept,
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       ...headers,
     },
@@ -75,8 +76,27 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
     throw new ApiError(0, "Sem conexão com a internet. Confira sua rede e tente novamente.");
   }
   if (!res.ok) throw await parseError(res);
+  return res;
+}
+
+export async function api<T>(path: string, options: Options = {}): Promise<T> {
+  const res = await request(path, options, "application/json");
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+/** Baixa um arquivo gerado pela API (ex.: PDF) e dispara o download no navegador. */
+export async function downloadFile(path: string, filename: string, accept: string): Promise<void> {
+  const res = await request(path, {}, accept);
+  const url = URL.createObjectURL(await res.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  // Revoga depois que o navegador inicia o download.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export const isUnauthorized = (error: unknown) =>
