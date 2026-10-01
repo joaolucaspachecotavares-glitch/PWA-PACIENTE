@@ -56,6 +56,12 @@ function ProfileForm({ profile }: { profile: PatientProfile }) {
           <dt>Data de nascimento</dt>
           <dd>{formatShortDate(`${profile.birthDate}T12:00:00Z`)}</dd>
         </div>
+        {profile.cpfMasked && (
+          <div>
+            <dt>CPF</dt>
+            <dd>{profile.cpfMasked}</dd>
+          </div>
+        )}
       </dl>
       {saved && (
         <Alert tone="success" role="status">

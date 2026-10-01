@@ -31,13 +31,16 @@ function underageBirthDate() {
   return `${d.getFullYear() - 17}-01-15`;
 }
 
-/** Erros de console inesperados (401 de sessão ausente é esperado para visitantes). */
+/**
+ * Erros de console inesperados (401 de sessão ausente é esperado para
+ * visitantes; 422 é esperado ao testar o CPF inválido no pagamento).
+ */
 function trackConsole(page: Page) {
   const errors: string[] = [];
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
     const text = msg.text();
-    if (/status of 401/.test(text)) return;
+    if (/status of (401|422)/.test(text)) return;
     errors.push(text);
   });
   page.on("pageerror", (err) => errors.push(err.message));
@@ -107,8 +110,12 @@ test.describe("jornada do paciente", () => {
     await expect(page.getByRole("heading", { name: "Confirme sua consulta" })).toBeVisible();
     await page.getByRole("button", { name: /Ir para pagamento/ }).click();
 
-    // Pagamento Pix (sandbox)
+    // Pagamento Pix (sandbox) — exige CPF na primeira cobrança
     await expect(page).toHaveURL(/\/pagamento$/);
+    await page.getByLabel("CPF").fill("111.111.111-11");
+    await page.getByRole("button", { name: /^Pagar / }).click();
+    await expect(page.getByText("CPF inválido. Confira os números.")).toBeVisible();
+    await page.getByLabel("CPF").fill("529.982.247-25");
     await page.getByRole("button", { name: /^Pagar / }).click();
     await expect(page.getByText("Copie o código abaixo")).toBeVisible();
     await page.getByRole("button", { name: /Simular Pix recebido/ }).click();
@@ -245,6 +252,95 @@ test.describe("jornada do paciente", () => {
     await page.getByRole("button", { name: "Entrar" }).click();
     await expect(page).toHaveURL(/\/inicio$/);
     await api.dispose();
+  });
+});
+
+test.describe("pagamento com cartão via checkout hospedado (gateway mockado)", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  /** `PaymentState` com cobrança de cartão pendente, aguardando o checkout hospedado. */
+  function cardCheckoutState(checkoutUrl: string) {
+    return {
+      appointmentStatus: "PENDING_PAYMENT",
+      amountCents: 15000,
+      holdExpiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      sandbox: true,
+      cpfRequired: false,
+      payment: {
+        status: "PENDING_PAYMENT",
+        method: "CARD",
+        pixPayload: null,
+        pixQrImage: null,
+        checkoutUrl,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        paidAt: null,
+      },
+    };
+  }
+
+  /**
+   * Cenário isolado de UI (sem registro nem login reais): simula sessão e
+   * consulta via rotas mockadas e navega direto à tela de pagamento. Uma única
+   * rota cuida de `GET` (polling do estado) e `POST` (criar/avançar a
+   * cobrança) em `/appointments/checkout-ui/payment`, servindo sempre o
+   * último estado passado a `setState` — assim o teste consegue simular tanto
+   * a resposta do clique em "Pagar" quanto o polling automático a cada 4s,
+   * sem que registros de rota concorrentes se sobreponham um ao outro.
+   */
+  async function reachPaymentScreen(page: Page) {
+    let state: unknown = { ...cardCheckoutState("https://checkout.example/x"), payment: null };
+    await page.context().addCookies([{ name: "lm_rt", value: "checkout-ui-fixture", url: "http://127.0.0.1:3000" }]);
+    await page.route("**/api/auth/me", (route) => route.fulfill({ json: {
+      id: "patient-checkout", name: "Paciente Teste", firstName: "Paciente",
+      email: "checkout@teste.luvimind.dev", role: "PATIENT", phone: null,
+      createdAt: new Date().toISOString(),
+    } }));
+    await page.route("**/api/notifications", (route) => route.fulfill({ json: { items: [], unread: 0 } }));
+    await page.route("**/api/appointments/checkout-ui", (route) => route.fulfill({ json: {
+      id: "checkout-ui", startsAt: new Date(Date.now() + 86400000).toISOString(),
+      professional: { id: "pro-checkout", slug: "profissional-teste", name: "Profissional Teste", initials: "PT", photoUrl: null },
+    } }));
+    await page.route("**/api/appointments/checkout-ui/payment", (route) => route.fulfill({ json: state }));
+    await page.goto("/consultas/checkout-ui/pagamento");
+    await expect(page).toHaveURL(/\/pagamento$/);
+    return { setState: (next: unknown) => { state = next; } };
+  }
+
+  test("só navega ao checkout quando a URL é https; esquema inseguro mostra erro e não navega", async ({ page }) => {
+    const fixture = await reachPaymentScreen(page);
+    await expect(page.getByRole("heading", { name: "Como deseja pagar?" })).toBeVisible();
+
+    // Clica em "Pagar" (cartão) — a resposta mockada do POST já traz um checkoutUrl inseguro.
+    fixture.setState(cardCheckoutState("http://checkout.example/x"));
+    await page.locator("label.payment-method", { hasText: "Cartão de crédito" }).click();
+    await page.getByRole("button", { name: /^Pagar / }).click();
+    await expect(page.getByText("Você será levado a um ambiente seguro do meio de pagamento")).toBeVisible();
+
+    // http: não deve navegar nem chegar a fazer a requisição ao checkout.
+    let navigated = false;
+    await page.route("http://checkout.example/**", (route) => {
+      navigated = true;
+      return route.abort();
+    });
+    await page.getByRole("button", { name: "Pagar com cartão" }).click();
+    await expect(
+      page.getByText("Não conseguimos abrir o ambiente de pagamento com segurança. Tente novamente."),
+    ).toBeVisible();
+    expect(navigated).toBe(false);
+
+    // Troca o checkoutUrl para https e espera o polling do estado (a cada 4s)
+    // buscar o novo valor antes de pagar de novo — esse é o último passo porque
+    // a navegação real para o checkout descarrega a SPA, mesmo abortada.
+    fixture.setState(cardCheckoutState("https://checkout.example/x"));
+    await page.waitForResponse(
+      (res) => res.request().method() === "GET" && res.url().endsWith("/appointments/checkout-ui/payment"),
+      { timeout: 8000 },
+    );
+    await page.route("https://checkout.example/**", (route) => route.abort());
+    const requestPromise = page.waitForRequest("https://checkout.example/x");
+    await page.getByRole("button", { name: "Pagar com cartão" }).click();
+    const request = await requestPromise;
+    expect(request.url()).toBe("https://checkout.example/x");
   });
 });
 
