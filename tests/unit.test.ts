@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { toggleOption } from "../src/lib/answers.ts";
+import { safeInternalPath } from "../src/lib/routes.ts";
 import { buildCalendarFile, formatMoney, formatPrice, isAdult, maskPhone, onlyDigits } from "../src/lib/format.ts";
 
 describe("idade mínima (verificação imediata na tela)", () => {
@@ -74,5 +75,16 @@ describe("renovação da sessão num 401", () => {
     assert.equal(shouldRefreshOn401("/auth/login"), false);
     assert.equal(shouldRefreshOn401("/auth/refresh"), false);
     assert.equal(shouldRefreshOn401("/auth/patient/register"), false);
+  });
+});
+
+describe("destino interno seguro", () => {
+  it("mantém caminhos internos com busca e âncora", () => {
+    assert.equal(safeInternalPath("/agenda?x=1#a", "/inicio"), "/agenda?x=1#a");
+  });
+  it("recusa destinos que o parser de URL leva a outro host", () => {
+    for (const value of [null, undefined, "", "https://mal.example", "//mal.example", "/\\mal.example", "/\tmal.example", "/\n/mal.example", "/ /mal.example"]) {
+      assert.equal(safeInternalPath(value, "/inicio"), "/inicio", JSON.stringify(value));
+    }
   });
 });
