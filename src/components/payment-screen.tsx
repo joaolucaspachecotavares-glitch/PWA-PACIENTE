@@ -5,11 +5,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Copy, CreditCard, FlaskConical, QrCode, TimerReset } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import type { PaymentState } from "@/lib/api-types";
-import { formatMoney, formatTime, formatWeekdayDate } from "@/lib/format";
+import { formatCpfInput, formatMoney, formatTime, formatWeekdayDate, onlyDigits } from "@/lib/format";
 import { keys, useAppointment, useInvalidateAppointments, usePaymentState } from "@/lib/queries";
 import { Avatar } from "./professional-card";
 import { ErrorBlock, LoadingBlock } from "./query-state";
-import { Alert, BackLink, Button, ButtonLink, EmptyState } from "./ui";
+import { Alert, BackLink, Button, ButtonLink, EmptyState, Field, TextInput } from "./ui";
 
 function useCountdown(until: string | null) {
   const [now, setNow] = useState(() => Date.now());
@@ -29,10 +29,14 @@ export function PaymentScreen({ id }: { id: string }) {
   const invalidate = useInvalidateAppointments();
   const appointment = useAppointment(id);
   const [method, setMethod] = useState<"PIX" | "CARD">("PIX");
+  const [cpf, setCpf] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cpfError, setCpfError] = useState<string | undefined>(undefined);
   const [copied, setCopied] = useState(false);
   const pixPending = (s?: PaymentState) => s?.payment?.status === "PENDING_PAYMENT" && s.payment.method === "PIX";
+  const cardCheckoutPending = (s?: PaymentState) =>
+    s?.payment?.status === "PENDING_PAYMENT" && s.payment.method === "CARD" && !!s.payment.checkoutUrl;
   const state = usePaymentState(id, true);
   const countdown = useCountdown(state.data?.holdExpiresAt ?? null);
 
@@ -45,15 +49,25 @@ export function PaymentScreen({ id }: { id: string }) {
   async function run(path: string, body: unknown) {
     setBusy(true);
     setError(null);
+    setCpfError(undefined);
     try {
       const next = await api<PaymentState>(path, { method: "POST", body });
       client.setQueryData(keys.payment(id), next);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Não conseguimos processar seu pagamento. Tente novamente.");
+      if (err instanceof ApiError && err.errors.cpf) {
+        setCpfError(err.errors.cpf);
+      } else {
+        setError(err instanceof ApiError ? err.message : "Não conseguimos processar seu pagamento. Tente novamente.");
+      }
       void state.refetch();
     } finally {
       setBusy(false);
     }
+  }
+
+  function pay(selectedMethod: "PIX" | "CARD") {
+    const body = data?.cpfRequired ? { method: selectedMethod, cpf: onlyDigits(cpf) } : { method: selectedMethod };
+    void run(`/appointments/${id}/payment`, body);
   }
 
   if (state.isPending || appointment.isPending) return <LoadingBlock lines={5} label="Carregando pagamento" />;
@@ -115,6 +129,9 @@ export function PaymentScreen({ id }: { id: string }) {
           <h2 id="pix-title">
             <QrCode size={20} /> Pague via Pix
           </h2>
+          {data.payment?.pixQrImage && (
+            <img alt="QR Code Pix" src={data.payment.pixQrImage} width={220} height={220} />
+          )}
           <p>Copie o código abaixo e cole no aplicativo do seu banco, na opção Pix Copia e Cola.</p>
           <div className="pix-code">
             <code>{data.payment?.pixPayload}</code>
@@ -135,9 +152,30 @@ export function PaymentScreen({ id }: { id: string }) {
               <FlaskConical size={17} /> Simular Pix recebido
             </Button>
           )}
-          <Button variant="ghost" disabled={busy} onClick={() => void run(`/appointments/${id}/payment`, { method: "CARD" })}>
+          <Button variant="ghost" disabled={busy} onClick={() => pay("CARD")}>
             Prefiro pagar com cartão
           </Button>
+        </section>
+      ) : cardCheckoutPending(data) ? (
+        <section className="booking-panel" aria-labelledby="card-title">
+          <h2 id="card-title">
+            <CreditCard size={20} /> Pague com cartão
+          </h2>
+          <p>Você será levado a um ambiente seguro do meio de pagamento.</p>
+          <Button
+            className="full-width"
+            onClick={() => window.location.assign(data.payment?.checkoutUrl ?? "")}
+          >
+            Pagar com cartão
+          </Button>
+          <p className="waiting" role="status">
+            <span className="live-dot" /> Aguardando pagamento… A confirmação aparece aqui automaticamente.
+          </p>
+          {data.sandbox && (
+            <Button loading={busy} onClick={() => void run(`/appointments/${id}/payment/sandbox`, { outcome: "paid" })}>
+              <FlaskConical size={17} /> Simular pagamento aprovado
+            </Button>
+          )}
         </section>
       ) : (
         <section className="booking-panel" aria-labelledby="method-title">
@@ -162,6 +200,18 @@ export function PaymentScreen({ id }: { id: string }) {
               </label>
             ))}
           </div>
+          {data.cpfRequired && (
+            <Field id="cpf" label="CPF" error={cpfError} hint="Usado pelo meio de pagamento e no seu recibo. Guardado com criptografia.">
+              <TextInput
+                id="cpf"
+                inputMode="numeric"
+                autoComplete="off"
+                value={cpf}
+                error={cpfError}
+                onChange={(e) => setCpf(formatCpfInput(e.target.value))}
+              />
+            </Field>
+          )}
           <dl className="detail-list">
             <div>
               <dt>Consulta</dt>
@@ -172,7 +222,7 @@ export function PaymentScreen({ id }: { id: string }) {
               <dd>{formatMoney(data.amountCents)}</dd>
             </div>
           </dl>
-          <Button className="full-width" loading={busy} onClick={() => void run(`/appointments/${id}/payment`, { method })}>
+          <Button className="full-width" loading={busy} onClick={() => pay(method)}>
             Pagar {formatMoney(data.amountCents)}
           </Button>
           <ButtonLink href={`/consultas/${id}`} variant="ghost" className="full-width">

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { toggleOption } from "../src/lib/answers.ts";
 import { safeInternalPath } from "../src/lib/routes.ts";
-import { buildCalendarFile, formatMoney, formatPrice, isAdult, maskPhone, onlyDigits } from "../src/lib/format.ts";
+import { buildCalendarFile, formatCpfInput, formatMoney, formatPrice, isAdult, maskPhone, onlyDigits } from "../src/lib/format.ts";
 
 describe("idade mínima (verificação imediata na tela)", () => {
   // 12:00 UTC = 09:00 em Brasília
@@ -31,6 +31,10 @@ describe("formatação", () => {
     assert.equal(maskPhone("48999990000"), "(48) 99999-0000");
     assert.equal(maskPhone("4833330000"), "(48) 3333-0000");
     assert.equal(onlyDigits("(48) 99999-0000"), "48999990000");
+  });
+  it("aplica máscara de CPF durante a digitação", () => {
+    assert.equal(formatCpfInput("52998224725"), "529.982.247-25");
+    assert.equal(formatCpfInput("5299"), "529.9");
   });
 });
 

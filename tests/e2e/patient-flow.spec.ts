@@ -31,13 +31,16 @@ function underageBirthDate() {
   return `${d.getFullYear() - 17}-01-15`;
 }
 
-/** Erros de console inesperados (401 de sessão ausente é esperado para visitantes). */
+/**
+ * Erros de console inesperados (401 de sessão ausente é esperado para
+ * visitantes; 422 é esperado ao testar o CPF inválido no pagamento).
+ */
 function trackConsole(page: Page) {
   const errors: string[] = [];
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
     const text = msg.text();
-    if (/status of 401/.test(text)) return;
+    if (/status of (401|422)/.test(text)) return;
     errors.push(text);
   });
   page.on("pageerror", (err) => errors.push(err.message));
@@ -107,8 +110,12 @@ test.describe("jornada do paciente", () => {
     await expect(page.getByRole("heading", { name: "Confirme sua consulta" })).toBeVisible();
     await page.getByRole("button", { name: /Ir para pagamento/ }).click();
 
-    // Pagamento Pix (sandbox)
+    // Pagamento Pix (sandbox) — exige CPF na primeira cobrança
     await expect(page).toHaveURL(/\/pagamento$/);
+    await page.getByLabel("CPF").fill("111.111.111-11");
+    await page.getByRole("button", { name: /^Pagar / }).click();
+    await expect(page.getByText("CPF inválido. Confira os números.")).toBeVisible();
+    await page.getByLabel("CPF").fill("529.982.247-25");
     await page.getByRole("button", { name: /^Pagar / }).click();
     await expect(page.getByText("Copie o código abaixo")).toBeVisible();
     await page.getByRole("button", { name: /Simular Pix recebido/ }).click();
