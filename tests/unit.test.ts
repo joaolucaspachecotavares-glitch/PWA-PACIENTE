@@ -2,7 +2,17 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { toggleOption } from "../src/lib/answers.ts";
 import { safeInternalPath } from "../src/lib/routes.ts";
-import { buildCalendarFile, formatCpfInput, formatMoney, formatPrice, isAdult, maskPhone, onlyDigits } from "../src/lib/format.ts";
+import {
+  buildCalendarFile,
+  formatCpfInput,
+  formatMoney,
+  formatPrice,
+  isAdult,
+  isSafeImageSrc,
+  maskPhone,
+  onlyDigits,
+  safeExternalUrl,
+} from "../src/lib/format.ts";
 
 describe("idade mínima (verificação imediata na tela)", () => {
   // 12:00 UTC = 09:00 em Brasília
@@ -35,6 +45,35 @@ describe("formatação", () => {
   it("aplica máscara de CPF durante a digitação", () => {
     assert.equal(formatCpfInput("52998224725"), "529.982.247-25");
     assert.equal(formatCpfInput("5299"), "529.9");
+  });
+});
+
+describe("URL externa segura (checkout do gateway de pagamento)", () => {
+  it("aceita apenas https", () => {
+    assert.equal(safeExternalUrl("https://checkout.example/x"), "https://checkout.example/x");
+    assert.equal(safeExternalUrl("http://checkout.example/x"), null);
+    assert.equal(safeExternalUrl("javascript:alert(1)"), null);
+    assert.equal(safeExternalUrl("data:text/html,x"), null);
+  });
+  it("recusa valores que não são URLs válidas", () => {
+    assert.equal(safeExternalUrl(""), null);
+    assert.equal(safeExternalUrl(null), null);
+    assert.equal(safeExternalUrl(undefined), null);
+    assert.equal(safeExternalUrl("não é uma url"), null);
+  });
+});
+
+describe("fonte segura de imagem (QR Code Pix)", () => {
+  it("aceita data URI de imagem ou https", () => {
+    assert.equal(isSafeImageSrc("data:image/png;base64,abc"), true);
+    assert.equal(isSafeImageSrc("https://gateway.example/qr.png"), true);
+  });
+  it("recusa outros esquemas e valores vazios", () => {
+    assert.equal(isSafeImageSrc("data:text/html,x"), false);
+    assert.equal(isSafeImageSrc("http://gateway.example/qr.png"), false);
+    assert.equal(isSafeImageSrc("javascript:alert(1)"), false);
+    assert.equal(isSafeImageSrc(null), false);
+    assert.equal(isSafeImageSrc(""), false);
   });
 });
 

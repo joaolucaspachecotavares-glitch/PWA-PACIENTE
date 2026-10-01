@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Copy, CreditCard, FlaskConical, QrCode, TimerReset } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import type { PaymentState } from "@/lib/api-types";
-import { formatCpfInput, formatMoney, formatTime, formatWeekdayDate, onlyDigits } from "@/lib/format";
+import { formatCpfInput, formatMoney, formatTime, formatWeekdayDate, isSafeImageSrc, onlyDigits, safeExternalUrl } from "@/lib/format";
 import { keys, useAppointment, useInvalidateAppointments, usePaymentState } from "@/lib/queries";
 import { Avatar } from "./professional-card";
 import { ErrorBlock, LoadingBlock } from "./query-state";
@@ -65,11 +65,6 @@ export function PaymentScreen({ id }: { id: string }) {
     }
   }
 
-  function pay(selectedMethod: "PIX" | "CARD") {
-    const body = data?.cpfRequired ? { method: selectedMethod, cpf: onlyDigits(cpf) } : { method: selectedMethod };
-    void run(`/appointments/${id}/payment`, body);
-  }
-
   if (state.isPending || appointment.isPending) return <LoadingBlock lines={5} label="Carregando pagamento" />;
   if (state.isError) return <ErrorBlock error={state.error} onRetry={() => void state.refetch()} />;
   if (appointment.isError) return <ErrorBlock error={appointment.error} onRetry={() => void appointment.refetch()} />;
@@ -77,6 +72,21 @@ export function PaymentScreen({ id }: { id: string }) {
   const data = state.data;
   const a = appointment.data;
   if (data.appointmentStatus === "CONFIRMED") return <LoadingBlock lines={2} label="Confirmando" />;
+
+  function pay(selectedMethod: "PIX" | "CARD") {
+    const body = data.cpfRequired ? { method: selectedMethod, cpf: onlyDigits(cpf) } : { method: selectedMethod };
+    void run(`/appointments/${id}/payment`, body);
+  }
+
+  /** Só navega a um checkout externo confiável (`https:`); caso contrário, mostra erro e fica na tela. */
+  function goToCheckout() {
+    const url = safeExternalUrl(data.payment?.checkoutUrl);
+    if (!url) {
+      setError("Não conseguimos abrir o ambiente de pagamento com segurança. Tente novamente.");
+      return;
+    }
+    window.location.assign(url);
+  }
 
   if (data.appointmentStatus !== "PENDING_PAYMENT" || countdown?.expired) {
     const refunded = data.payment?.status === "REFUNDED";
@@ -129,8 +139,8 @@ export function PaymentScreen({ id }: { id: string }) {
           <h2 id="pix-title">
             <QrCode size={20} /> Pague via Pix
           </h2>
-          {data.payment?.pixQrImage && (
-            <img alt="QR Code Pix" src={data.payment.pixQrImage} width={220} height={220} />
+          {isSafeImageSrc(data.payment?.pixQrImage) && (
+            <img alt="QR Code Pix" src={data.payment?.pixQrImage ?? undefined} width={220} height={220} />
           )}
           <p>Copie o código abaixo e cole no aplicativo do seu banco, na opção Pix Copia e Cola.</p>
           <div className="pix-code">
@@ -162,10 +172,7 @@ export function PaymentScreen({ id }: { id: string }) {
             <CreditCard size={20} /> Pague com cartão
           </h2>
           <p>Você será levado a um ambiente seguro do meio de pagamento.</p>
-          <Button
-            className="full-width"
-            onClick={() => window.location.assign(data.payment?.checkoutUrl ?? "")}
-          >
+          <Button className="full-width" onClick={goToCheckout}>
             Pagar com cartão
           </Button>
           <p className="waiting" role="status">

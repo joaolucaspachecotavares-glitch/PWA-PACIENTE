@@ -134,6 +134,30 @@ export function formatCpfInput(value: string): string {
 }
 
 /**
+ * URL externa segura para navegar o paciente (ex.: checkout hospedado do
+ * gateway). Só aceita `https:`; qualquer outro esquema (`javascript:`,
+ * `data:`, `http:` etc.) ou valor que não seja uma URL válida é recusado.
+ */
+export function safeExternalUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fonte segura para `<img>` vinda do gateway de pagamento (QR Code Pix):
+ * uma imagem embutida (`data:image/...`) ou uma URL `https:`.
+ */
+export function isSafeImageSrc(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return value.startsWith("data:image/") || safeExternalUrl(value) !== null;
+}
+
+/**
  * Verificação imediata de idade para feedback na tela.
  * A regra decisiva é aplicada pela API.
  */
