@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { HeartHandshake, MessageCircle, Phone, Siren } from "lucide-react";
 import { FlowShell } from "@/components/flow-shell";
 import { ButtonLink } from "@/components/ui";
+import { safeInternalPath } from "@/lib/routes";
 
 export const metadata: Metadata = { title: "Apoio imediato" };
 
@@ -13,7 +14,7 @@ export default async function SupportPage({
   searchParams: Promise<{ continuar?: string }>;
 }) {
   const { continuar } = await searchParams;
-  const next = continuar?.startsWith("/") && !continuar.startsWith("//") ? continuar : "/questionario/3";
+  const next = safeInternalPath(continuar, "/questionario/3");
   return (
     <FlowShell>
       <div className="container support-page">
