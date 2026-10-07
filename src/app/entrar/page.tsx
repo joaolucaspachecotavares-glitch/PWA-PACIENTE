@@ -7,10 +7,7 @@ import { ArrowRight, Eye, EyeOff, Sprout } from "lucide-react";
 import { FlowShell } from "@/components/flow-shell";
 import { Alert, Button, Field, TextInput } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-
-function safeNext(value: string | null): string {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/inicio";
-}
+import { safeInternalPath } from "@/lib/routes";
 
 function LoginForm() {
   const router = useRouter();
@@ -21,6 +18,7 @@ function LoginForm() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const resetSuccess = params.get("senha") === "redefinida";
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -34,7 +32,7 @@ function LoginForm() {
       await api("/auth/login", { method: "POST", body: { email: email.trim(), password, app: "PATIENT_APP" } });
       // Nova identidade: descarta todo o cache (inclusive o "sem sessão" da visita anônima).
       client.clear();
-      router.replace(safeNext(params.get("proximo")));
+      router.replace(safeInternalPath(params.get("proximo"), "/inicio"));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível entrar. Tente novamente.");
       setPassword("");
@@ -45,6 +43,11 @@ function LoginForm() {
 
   return (
     <form noValidate onSubmit={(e) => void submit(e)} className="registration-form">
+      {resetSuccess && (
+        <Alert tone="success" role="status">
+          Senha alterada. Entre com a nova senha.
+        </Alert>
+      )}
       <Field id="email" label="E-mail">
         <TextInput
           id="email"
@@ -74,6 +77,12 @@ function LoginForm() {
           </button>
         </div>
       </Field>
+      {/* <a> em vez de <Link>: navegação client-side deixaria o /entrar (que também tem
+          um campo "E-mail") montado durante a transição, correndo o risco de preencher
+          o campo errado. Navegação completa evita a ambiguidade. */}
+      <a href="/esqueci-senha" className="header-link">
+        Esqueci minha senha
+      </a>
       {error && (
         <Alert tone="error" role="alert">
           {error}

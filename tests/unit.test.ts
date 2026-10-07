@@ -1,7 +1,18 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { toggleOption } from "../src/lib/answers.ts";
-import { buildCalendarFile, formatMoney, formatPrice, isAdult, maskPhone, onlyDigits } from "../src/lib/format.ts";
+import { safeInternalPath } from "../src/lib/routes.ts";
+import {
+  buildCalendarFile,
+  formatCpfInput,
+  formatMoney,
+  formatPrice,
+  isAdult,
+  isSafeImageSrc,
+  maskPhone,
+  onlyDigits,
+  safeExternalUrl,
+} from "../src/lib/format.ts";
 
 describe("idade mínima (verificação imediata na tela)", () => {
   // 12:00 UTC = 09:00 em Brasília
@@ -30,6 +41,39 @@ describe("formatação", () => {
     assert.equal(maskPhone("48999990000"), "(48) 99999-0000");
     assert.equal(maskPhone("4833330000"), "(48) 3333-0000");
     assert.equal(onlyDigits("(48) 99999-0000"), "48999990000");
+  });
+  it("aplica máscara de CPF durante a digitação", () => {
+    assert.equal(formatCpfInput("52998224725"), "529.982.247-25");
+    assert.equal(formatCpfInput("5299"), "529.9");
+  });
+});
+
+describe("URL externa segura (checkout do gateway de pagamento)", () => {
+  it("aceita apenas https", () => {
+    assert.equal(safeExternalUrl("https://checkout.example/x"), "https://checkout.example/x");
+    assert.equal(safeExternalUrl("http://checkout.example/x"), null);
+    assert.equal(safeExternalUrl("javascript:alert(1)"), null);
+    assert.equal(safeExternalUrl("data:text/html,x"), null);
+  });
+  it("recusa valores que não são URLs válidas", () => {
+    assert.equal(safeExternalUrl(""), null);
+    assert.equal(safeExternalUrl(null), null);
+    assert.equal(safeExternalUrl(undefined), null);
+    assert.equal(safeExternalUrl("não é uma url"), null);
+  });
+});
+
+describe("fonte segura de imagem (QR Code Pix)", () => {
+  it("aceita data URI de imagem ou https", () => {
+    assert.equal(isSafeImageSrc("data:image/png;base64,abc"), true);
+    assert.equal(isSafeImageSrc("https://gateway.example/qr.png"), true);
+  });
+  it("recusa outros esquemas e valores vazios", () => {
+    assert.equal(isSafeImageSrc("data:text/html,x"), false);
+    assert.equal(isSafeImageSrc("http://gateway.example/qr.png"), false);
+    assert.equal(isSafeImageSrc("javascript:alert(1)"), false);
+    assert.equal(isSafeImageSrc(null), false);
+    assert.equal(isSafeImageSrc(""), false);
   });
 });
 
@@ -63,5 +107,27 @@ describe("arquivo de calendário", () => {
     assert.match(ics, /DTSTART:20261001T220000Z/);
     assert.match(ics, /SUMMARY:Consulta com Ana Martins/);
     assert.ok(!/ansiedade|resumo/i.test(ics));
+  });
+});
+
+describe("renovação da sessão num 401", () => {
+  it("renova em /auth/me e nas rotas do app, mas não no login, cadastro ou refresh", async () => {
+    const { shouldRefreshOn401 } = await import("../src/lib/session.ts");
+    assert.equal(shouldRefreshOn401("/auth/me"), true);
+    assert.equal(shouldRefreshOn401("/appointments"), true);
+    assert.equal(shouldRefreshOn401("/auth/login"), false);
+    assert.equal(shouldRefreshOn401("/auth/refresh"), false);
+    assert.equal(shouldRefreshOn401("/auth/patient/register"), false);
+  });
+});
+
+describe("destino interno seguro", () => {
+  it("mantém caminhos internos com busca e âncora", () => {
+    assert.equal(safeInternalPath("/agenda?x=1#a", "/inicio"), "/agenda?x=1#a");
+  });
+  it("recusa destinos que o parser de URL leva a outro host", () => {
+    for (const value of [null, undefined, "", "https://mal.example", "//mal.example", "/\\mal.example", "/\tmal.example", "/\n/mal.example", "/ /mal.example"]) {
+      assert.equal(safeInternalPath(value, "/inicio"), "/inicio", JSON.stringify(value));
+    }
   });
 });

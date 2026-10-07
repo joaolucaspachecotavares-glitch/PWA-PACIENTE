@@ -156,10 +156,13 @@ export type PaymentState = {
   amountCents: number;
   holdExpiresAt: string | null;
   sandbox: boolean;
+  cpfRequired: boolean;
   payment: {
     status: PaymentStatus;
     method: "PIX" | "CARD";
     pixPayload: string | null;
+    pixQrImage: string | null;
+    checkoutUrl: string | null;
     expiresAt: string | null;
     paidAt: string | null;
   } | null;
@@ -182,6 +185,7 @@ export type PatientProfile = {
   phone: string | null;
   birthDate: string;
   createdAt: string;
+  cpfMasked: string | null;
 };
 
 export type Journey = {

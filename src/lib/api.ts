@@ -1,6 +1,8 @@
 // Cliente HTTP da PWA. Todas as chamadas passam por /api (rewrite para a API
 // central), para que os cookies de sessão pertençam ao domínio do app.
 
+import { shouldRefreshOn401 } from "./session";
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -69,7 +71,7 @@ async function request(path: string, options: Options, accept: string): Promise<
   let res: Response;
   try {
     res = await fetch(url, init);
-    if (res.status === 401 && !path.startsWith("/auth/")) {
+    if (res.status === 401 && shouldRefreshOn401(path)) {
       if (await refreshSession()) res = await fetch(url, init);
     }
   } catch {
