@@ -95,7 +95,8 @@ test.describe("jornada do paciente", () => {
 
     // Perfil
     await page.getByRole("link", { name: /Ver perfil/ }).first().click();
-    await expect(page).toHaveURL(/\/profissionais\/[a-z-]+$/);
+    // Nomes repetidos geram slugs com sufixo numérico (helena-jornada-2).
+    await expect(page).toHaveURL(/\/profissionais\/[a-z0-9-]+$/);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
     // Agendamento: última data disponível garante mais de 4h de antecedência (reembolso integral)
